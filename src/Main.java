@@ -20,6 +20,8 @@ class Main {
 	    Goal root = parser.Goal();
 	    System.out.println(root.accept(eval, st));
 	    st.validateST();
+	    Pass2 secondEval = new Pass2(st);
+		System.out.println(root.accept(secondEval, st));
 		System.err.println("done");
 	}
 	catch(ParseException ex){
