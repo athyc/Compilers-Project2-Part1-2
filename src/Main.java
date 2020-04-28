@@ -12,6 +12,7 @@ class Main {
 	}
 	FileInputStream fis = null;
 	try{
+
 		SymbolTable st = new SymbolTable();
 	    fis = new FileInputStream(args[0]);
 	    MiniJavaParser parser = new MiniJavaParser(fis);
