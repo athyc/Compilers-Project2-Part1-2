@@ -5,8 +5,13 @@ class Factorial{
         int b;
         boolean c;
         int [] array;
+        boolean [] bool;
         Fac fac;
-        b=fac.something();
+        if(bool[3]){
+            b = 1+2;
+        }else{
+            b = 1 +3;
+        }
     }
 }
 //class Fac2 extends Fac1 {
@@ -18,26 +23,31 @@ class Factorial{
 //
 //
 //}
+
 class Fac {
 	int here;
 
     public int ComputeFac(int num, boolean [] b){
+        int a;
 		return 0;
     }
 	public int ComputeFac(boolean num){
 		return 0;
 	}
-    public int Else(){
+    public boolean Else(int a){
 
-        return 0;
+        return false;
+	}
+	public int Else(){
+        return here;
+    }
+
+}
+class Fac1 extends Fac {
+	boolean s;
+
+	public int ComputerFac(int num){
+		return here;
 	}
 
 }
-//class Fac1 extends Fac {
-//	boolean here;
-//
-//	public int ComputerFac(int num){
-//		return 0;
-//	}
-//
-//}

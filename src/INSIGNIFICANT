@@ -1,0 +1,33 @@
+\/\*(.|\n)*?\*\/
+   public String visit(BooleanType n, SymbolTable argu) throws Exception {
+/*
+    * f0 -> "boolean"
+    */
+      return n.f0.accept(this, argu).toString();
+   }
+
+   public String visit(IntegerType n, SymbolTable argu) throws Exception {
+   /*
+    * f0 -> "int"
+    */
+      return n.f0.accept(this, argu).toString();
+   }
+      public String visit(BooleanArrayType n, SymbolTable argu) throws Exception {
+    /*
+       * f0 -> "boolean"
+       * f1 -> "["
+       * f2 -> "]"
+       */
+         return n.f0.accept(this, argu)+n.f1.accept(this, argu)+n.f2.accept(this, argu).toString();
+
+      }
+
+      public String visit(IntegerArrayType n, SymbolTable argu) throws Exception {
+      /*
+       * f0 -> "int"
+       * f1 -> "["
+       * f2 -> "]"
+       */
+         return n.f0.accept(this, argu)+n.f1.accept(this, argu)+n.f2.accept(this, argu).toString();
+
+      }

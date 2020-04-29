@@ -56,8 +56,8 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
         Variable variable = new Variable();
         List<Function> functions;
         Function function = new Function();
-        Scope scope = new Scope();
-        scope.ID = n.f1.accept(this, argu);
+        Class aClass = new Class();
+        aClass.ID = n.f1.accept(this, argu);
 
         function.ID = "main";
         function.returnType = "void";
@@ -72,8 +72,8 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
             throw new Exception("Variable in main has same name as argument");
         }
         this.variablesCollector.clear();
-        scope.Functions.add(function);
-        argu.Scopes.add(scope);
+        aClass.Functions.add(function);
+        argu.aClasses.add(aClass);
 
         return null;
     }
@@ -122,21 +122,21 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
      */
     public String visit(ClassDeclaration n, SymbolTable argu)throws Exception {
         String _ret=null;
-        Scope scope = new Scope();
-        scope.ID = n.f1.accept(this, argu);
+        Class aClass = new Class();
+        aClass.ID = n.f1.accept(this, argu);
 
         n.f3.accept(this, argu);
-        scope.Variables = new ArrayList<>(this.variablesCollector);
+        aClass.Variables = new ArrayList<>(this.variablesCollector);
         this.variablesCollector.clear();
         n.f4.accept(this, argu);
-        scope.Functions = new ArrayList<>(this.methods);
+        aClass.Functions = new ArrayList<>(this.methods);
         methods.clear();
-        for(Scope scope1:argu.Scopes){
-            if(scope.ID.equals(scope1.ID)){
-                throw new Exception("Two classes have the same name " + scope.ID);
+        for(Class class1 :argu.aClasses){
+            if(aClass.ID.equals(class1.ID)){
+                throw new Exception("Two classes have the same name " + aClass.ID);
             }
         }
-        argu.Scopes.add(scope);
+        argu.aClasses.add(aClass);
         return _ret;
     }
 
@@ -154,35 +154,36 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
      */
     public String visit(ClassExtendsDeclaration n, SymbolTable argu)throws Exception {
         String _ret=null;
-        Scope scope = new Scope();
-        scope.ID = n.f1.accept(this, argu);
+        Class aClass = new Class();
+        aClass.ID = n.f1.accept(this, argu);
 
-        scope.Inheritance = n.f3.accept(this, argu);
+        aClass.Inheritance = n.f3.accept(this, argu);
         //argu.copyClass(scope);
 
         n.f5.accept(this, argu);
-        scope.Variables.addAll(variablesCollector);
+        aClass.Variables.addAll(variablesCollector);
         variablesCollector.clear();
         n.f6.accept(this, argu);
-        scope.Functions.addAll(methods);
+        aClass.Functions.addAll(methods);
         methods.clear();
-        if(scope.ID.equals(scope.Inheritance)){
-            throw new Exception(" cyclic inheritance involving " + scope.ID);
+        if(aClass.ID.equals(aClass.Inheritance)){
+            throw new Exception(" cyclic inheritance involving " + aClass.ID);
         }
-        for(Scope scope1:argu.Scopes){
-            if(scope.ID.equals(scope1.ID)){
-                throw new Exception("Two classes have the same name " + scope.ID);
+        for(Class class1 :argu.aClasses){
+            if(aClass.ID.equals(class1.ID)){
+                throw new Exception("Two classes have the same name " + aClass.ID);
             }
         }
-        argu.Scopes.add(scope);
+        argu.aClasses.add(aClass);
 
         return _ret;
     }
-    /**
-     * f0 -> Type()
-     * f1 -> Identifier()
-     */
+
     public String visit(FormalParameter n, SymbolTable argu)throws Exception{
+        /*
+         * f0 -> Type()
+         * f1 -> Identifier()
+         */
         String _ret=null;
         Variable temp = new Variable();
         temp.type = n.f0.accept(this, argu);
@@ -228,7 +229,7 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
      * f2 -> "]"
      */
     public String visit(BooleanArrayType n, SymbolTable argu) {
-        return "booleanArray";
+        return "boolean[]";
     }
     /**
      * f0 -> "int"
@@ -236,7 +237,7 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
      * f2 -> "]"
      */
     public String visit(IntegerArrayType n, SymbolTable argu) {
-        return "intArray";
+        return "int[]";
     }
     /**
      * f0 -> "boolean"

@@ -3,7 +3,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SymbolTable {
-    List<Scope> Scopes = new ArrayList<>() ;
+    List<Class> aClasses = new ArrayList<>() ;
     void print(String str){
         System.out.println(str);
     }
@@ -11,39 +11,39 @@ public class SymbolTable {
 
     public void validateST() throws Exception{
 
-        List<String> types = new ArrayList<>(Arrays.asList("int", "boolean", "booleanArray", "intArray", "StringArray"));
-        for (Scope scope : Scopes) {
-            types.add(scope.ID);
+        List<String> types = new ArrayList<>(Arrays.asList("int", "boolean", "boolean[]", "int[]", "StringArray"));
+        for (Class aClass : aClasses) {
+            types.add(aClass.ID);
         }
-        for (Scope scope : Scopes){
+        for (Class aClass : aClasses){
 
-            for (Variable variable: scope.Variables){
+            for (Variable variable: aClass.Variables){
                 if(!types.contains(variable.type)){
-                    throw new Exception("Error unknown type: " + variable.type + " in class " + scope.ID);
+                    throw new Exception("Error unknown type: " + variable.type + " in class " + aClass.ID);
 
                 }
             }
-            for (Function function: scope.Functions){
+            for (Function function: aClass.Functions){
                 if(!types.contains(function.returnType) && ! function.returnType.equals("void")){
-                    throw new Exception("Error unknown type: " + function.returnType + " in class " + scope.ID);
+                    throw new Exception("Error unknown type: " + function.returnType + " in class " + aClass.ID);
 
                 }
                 for (Variable variable:function.arguments){
                     if(!types.contains(variable.type)){
-                        throw new Exception("Error in function arguments "+function.ID+" in class " + scope.ID);
+                        throw new Exception("Error in function arguments "+function.ID+" in class " + aClass.ID);
                     }
                 }
                 for (Variable variable:function.declarations){
                     if(!types.contains(variable.type)){
-                        throw new Exception("Error in function declarations "+function.ID+" in class " + scope.ID);
+                        throw new Exception("Error in function declarations "+function.ID+" in class " + aClass.ID);
                     }
                 }
             }
 
         }
-        for (Scope scope:Scopes) {
-            if (scope.Inheritance!=null){
-                findInheritance(scope, scope);
+        for (Class aClass : aClasses) {
+            if (aClass.Inheritance!=null){
+                findInheritance(aClass, aClass);
             }
             //print("Validation done " + scope.ID);
         }
@@ -51,22 +51,22 @@ public class SymbolTable {
 
     }
 
-    private void findInheritance(Scope scopeSearch, Scope superScope) throws Exception {
-        if(superScope.Inheritance == null){
+    private void findInheritance(Class classSearch, Class superClass) throws Exception {
+        if(superClass.Inheritance == null){
             return;
         }
         boolean found = false;
-        for (Scope scope:Scopes) {
-            if(superScope.Inheritance.equals(scope.ID)){
-                scopeSearch.InheritedVariables.addAll(scope.Variables);
-                scopeSearch.InheritedFunctions.addAll(scope.Functions);
-                findInheritance(scopeSearch, scope);
+        for (Class aClass : aClasses) {
+            if(superClass.Inheritance.equals(aClass.ID)){
+                classSearch.InheritedVariables.addAll(aClass.Variables);
+                classSearch.InheritedFunctions.addAll(aClass.Functions);
+                findInheritance(classSearch, aClass);
                 found = true;
                 break;
             }
         }
         if(!found){
-            throw new Exception("Error! Unknown class " + superScope.Inheritance);
+            throw new Exception("Error! Unknown class " + superClass.Inheritance);
         }
 
     }

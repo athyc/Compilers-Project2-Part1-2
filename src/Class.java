@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
 
-public class Scope {
+public class Class {
     String ID, Inheritance = null;
     boolean InheritanceFound = true;
     List<Function> Functions = new ArrayList<>();
@@ -33,11 +33,15 @@ public class Scope {
         }
         return false;
     }
-    public Variable findInScope(String varID, Function function, String ScopeID)throws Exception{
+    public Variable findInScope(String varID, Function function, String ScopeID, Class currScope)throws Exception{
         Variable var = null;
-        for (Function funct: Functions){
-            if(funct.ID.equals(function.ID)) var = funct.lookForVariableInFunction(varID);
+        if(varID.equals("this")){
+            var = new Variable();
+            var.type = currScope.ID;
+            return var;
         }
+         var = function.lookForVariableInFunction(varID);
+
 
         if(var == null)var = findInScopeVariables(varID);
         if(var == null){
