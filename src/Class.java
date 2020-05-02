@@ -3,11 +3,13 @@ import java.util.List;
 
 public class Class {
     String ID, Inheritance = null;
-    boolean InheritanceFound = true;
+    int classSize=0, varOffset = 0, functOffset = 0, classInheritedOffset=0,varLocalOffsett =0,functLocalOffset=0,varInheritedOffset=0,functInheritedOffset=0;
     List<Function> Functions = new ArrayList<>();
     List<Variable> Variables = new ArrayList<>();
     List<Function> InheritedFunctions = new ArrayList<>();
     List<Variable> InheritedVariables = new ArrayList<>();
+    List<String> InheritanceLine = new ArrayList<>();
+
     public Variable findInScopeVariables(String varID){
         for (Variable var:Variables) {
             if(var.name.equals(varID))return var;
@@ -31,6 +33,9 @@ public class Class {
         for (Function funct: Functions){
             if(funct.ID.equals(function)) return true;
         }
+        for (Function funct: InheritedFunctions){
+            if(funct.ID.equals(function)) return true;
+        }
         return false;
     }
     public Variable findInScope(String varID, Function function, String ScopeID, Class currScope)throws Exception{
@@ -44,9 +49,44 @@ public class Class {
 
 
         if(var == null)var = findInScopeVariables(varID);
-        if(var == null){
-            throw new Exception("Variable"+varID+" not found in " + ScopeID + function.ID);
-        }
+
         return var;
+    }
+    public String getType(String varID, Function function) throws Exception {
+        if(varID.equals("this")){
+            return this.ID;
+        }
+        Variable var = function.lookForVariableInFunction(varID);
+
+
+        if(var == null)var = findInScopeVariables(varID);
+        if(var==null){
+            throw new Exception("Variable" + varID+" not found");
+        }
+        return var.type;
+    }
+
+
+
+    public boolean isOverriden(Function function) throws Exception {
+        int i;
+        for (Function f :InheritedFunctions){
+            if(function.ID.equals(f.ID) && function.arguments.size()==f.arguments.size()){
+                for (i=0;i<f.arguments.size();i++){
+                    if(!f.arguments.get(i).type.equals(function.arguments.get(i).type)){
+                        break;
+                    }
+                }
+                if(i==f.arguments.size()){
+                    if(!function.returnType.equals(f.returnType)){
+                        throw new Exception("cannot override " + f.ID + " in " + this.ID + " from " + f.returnType + " to " + function.returnType);
+                    }
+                    return true;
+                }
+
+
+            }
+        }
+        return false;
     }
 }

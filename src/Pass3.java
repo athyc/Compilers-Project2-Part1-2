@@ -1,45 +1,16 @@
 import syntaxtree.*;
 import visitor.GJDepthFirst;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public class Pass2 extends GJDepthFirst<String,SymbolTable> {
-    void print(String str){
-        System.out.println(str);
-    }
-
-    SymbolTable ST;
+public class Pass3 extends GJDepthFirst <String,SymbolTable>{
     private ArrayList<String> formalParameterCollector = new ArrayList<>();
-    private Class currClass = new Class();
+    ArrayList<ArrayList<String>> argStack = new ArrayList<>();
     private Function currFunction = new Function();
     List<String> debugger = new ArrayList<>();
-    List<Variable> callArgCollector = new ArrayList<>();
-    ArrayList<ArrayList<String>> argStack = new ArrayList<>();
+    private Class currClass = new Class();
     private int argStackIndex = -1;
-
-
-
-    public Pass2(SymbolTable st) {
-        ST = st;
-    }
-
-    //utils
-    private ArrayList<String> decodeArgList(ArrayList<String> argList)throws Exception{
-        Variable variable;
-        ArrayList<String> rval = new ArrayList<String>();
-        for (String arg:argList){
-            if(arg.endsWith("id")){
-                variable = currClass.findInScope(getID(arg), currFunction, currClass.ID, currClass);
-                rval.add(variable.type);
-            }else {
-                rval.add(arg);
-            }
-        }
-        return rval;
-    }
-
+    SymbolTable ST;
     private Function functionSignatureSearch(String classid, String functid, ArrayList<String> localArgList)throws Exception {
         Class c = scopeSearch(classid);
         Variable v = new Variable();
@@ -49,7 +20,19 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
                 if(f.arguments.size()!=localArgList.size())continue;
                 for ( i = 0 ; i<f.arguments.size(); i++){
                     v = f.arguments.get(i);
-                    if(!v.type.equals(getID(localArgList.get(i)))){
+                    if(!v.type.equals(localArgList.get(i))){
+                        break;
+                    }
+                }
+                if(i == f.arguments.size())return f;
+            }
+        }
+        for (Function f: c.InheritedFunctions){
+            if(f.ID.equals(functid)){
+                if(f.arguments.size()!=localArgList.size())continue;
+                for ( i = 0 ; i<f.arguments.size(); i++){
+                    v = f.arguments.get(i);
+                    if(!v.type.equals(localArgList.get(i))){
                         break;
                     }
                 }
@@ -58,49 +41,27 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         }
         throw new Exception("actual and formal argument lists differ in function call "+functid+" of class "+classid+" in "  + currClass.ID +' '+ currFunction.ID );
     }
+    private void inappropriateTypeCheck(String type, String wantedType1) throws Exception {
 
-    private boolean inappropriateTyping(String a, String b, String wantedType1, String wantedType2) throws Exception {
-        inappropriateTypeCheck(a, wantedType1, wantedType1);
-        inappropriateTypeCheck(b, wantedType1, wantedType2);
-        return false;
-    }
-    private boolean inPrimaryTypes(String type){
-        List<String> primaryTypes = Arrays.asList("int","boolean","boolean[]","int[]");
-        return primaryTypes.contains(type);
+        if(! wantedType1.equals(type)){
+            throw new Exception("inappropriate typing in " + currClass.ID +' '+ currFunction.ID);
+        }
 
     }
-    private void inappropriateTypeCheck(String type, String wantedType1, String wantedType2) throws Exception {
-        if (!inPrimaryTypes(type)) {
-            Variable bv =  currClass.findInScope(getID(type),currFunction, currClass.ID,currClass );
-            if(bv == null){
-                throw new Exception("Variable not found in " + currClass.ID +' '+ currFunction.ID);
-            }
-            if(! getID(wantedType1).equals(bv.type)){
-                throw new Exception("inappropriate typing in " + currClass.ID +' '+ currFunction.ID);
-            }
-        } else {
-            if (!type.endsWith(wantedType2)) {
-                throw new Exception("inappropriate typing in " + currClass.ID +' '+ currFunction.ID);
+    private ArrayList<String> decodeArgList(ArrayList<String> argList)throws Exception{
+        Variable variable;
+        ArrayList<String> rval = new ArrayList<String>();
+        for (String arg:argList){
+            if(arg.endsWith("id")){
+                variable = currClass.findInScope(arg, currFunction, currClass.ID, currClass);
+                rval.add(variable.type);
+            }else {
+                rval.add(arg);
             }
         }
+        return rval;
     }
-
-    private boolean inappropriateTyping(String a, String wantedType1) throws Exception {
-        inappropriateTypeCheck(a, wantedType1, wantedType1);
-        return false;
-    }
-
-    private String getID(String a) {
-        return a.endsWith("id")?a.substring(0,a.length()-2):a;
-    }
-
-    private String cleanupPrimex(String primexRes){
-        if(primexRes.startsWith("new ")){
-            return primexRes.substring(4);
-        }
-        return primexRes;
-    }
-
+    private String getArrayType(String type) {return type.substring(0,type.length()-2);}
     private Class scopeSearch(String scopeID) throws Exception{
         for(Class aClass : ST.aClasses){
             if(aClass.ID.equals(scopeID)){
@@ -109,11 +70,24 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         }
         throw new Exception("Symbol " + scopeID + " not found in " + currClass.ID +' '+ currFunction.ID);
     }
+    public String decodePrimEx(String a) throws Exception{
+        a = cleanupPrimex(a);
+        if(!ST.inPrimaryTypes(a)){
+            a = currClass.getType(a,currFunction);
+        }
+        if(a==null) throw new Exception("cannot find symbol "+ a+" in " + currClass.ID + currFunction.ID);
+        return a;
+    }
+    private String cleanupPrimex(String primexRes){
+        if(primexRes.startsWith("new ")){
+            return primexRes.substring(4);
+        }
+        return primexRes;
+    }
+    public Pass3(SymbolTable st) {ST = st;}
 
 
-
-
-    //classes
+//classes
     public String visit(MainClass n, SymbolTable argu)throws Exception {
         /*
          mainclass
@@ -144,7 +118,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          */
         String _ret=null;
 
-        currClass = scopeSearch(getID(n.f1.accept(this, argu)));
+        currClass = scopeSearch(n.f1.accept(this, argu));
 
         n.f4.accept(this, argu);
 
@@ -164,14 +138,14 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          */
         String _ret=null;
 
-        currClass = scopeSearch(getID(n.f1.accept(this, argu)));
+        currClass = scopeSearch(n.f1.accept(this, argu));
 
         n.f6.accept(this, argu);
 
         return _ret;
     }
 
-    //methods
+//methods
     public String visit(MethodDeclaration n, SymbolTable argu) throws Exception {
         /*
          * f0 -> "public"
@@ -194,11 +168,11 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         String functID = n.f2.accept(this, argu);
 
         n.f4.accept(this, argu);
-        currFunction = functionSignatureSearch(currClass.ID, getID(functID), formalParameterCollector);
+        currFunction = functionSignatureSearch(currClass.ID, functID, formalParameterCollector);
         formalParameterCollector.clear();
 
         n.f8.accept(this, argu);
-        inappropriateTyping(n.f10.accept(this, argu),type);
+        inappropriateTypeCheck(n.f10.accept(this, argu),type);
         return _ret;
     }
 
@@ -212,7 +186,10 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         return _ret;
     }
 
-    //statements
+
+
+
+//Statements
     public String visit(Statement n, SymbolTable argu) throws Exception {
         debugger.clear();
         return n.f0.accept(this, argu);
@@ -229,19 +206,33 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         String var1ID = n.f0.accept(this, argu);
         debugger.add("=");
 
-        Variable variable3 = currClass.findInScope(getID(var1ID), currFunction, currClass.ID, currClass);
+        Variable variable3 = currClass.findInScope(var1ID, currFunction, currClass.ID, currClass);
         if(variable3 == null){
             throw new Exception("Variable not found in " + currClass.ID+' ' + currFunction.ID);
         }
 
         String result = n.f2.accept(this, argu);
         //look for both values
-        result = decodeExpression(result);
+
         if(!result.equals(variable3.type)){
-            throw new Exception("Variables not matching in assignment statement in " + currClass.ID+' ' + currFunction.ID);
+            //if not variable 3 type in inheritance line of class type
+            if(!inInheritanceLine(variable3.type,result)){
+                throw new Exception("Variables not matching in assignment statement in " + currClass.ID+' ' + currFunction.ID);
+            }
         }
 //        debugger.clear();
         return _ret;
+    }
+
+    private boolean inInheritanceLine(String type, String result) throws Exception {
+        Class a = scopeSearch(type);
+        Class b = scopeSearch(result);
+        for(String classID:b.InheritanceLine){
+            if(classID.equals(type)){
+                return true;
+            }
+        }
+        return false;
     }
 
     public String visit(ArrayAssignmentStatement n, SymbolTable argu) throws Exception {
@@ -255,32 +246,16 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          * f6 -> ";"
          */
         String _ret=null;
-        String var1ID = n.f0.accept(this, argu);
-        Variable variable3 = currClass.findInScope(getID(var1ID), currFunction, currClass.ID, currClass);
-        if(variable3 == null){
-            throw new Exception("Variable not found in " + currClass.ID+' ' + currFunction.ID);
-        }
+        String arrayType = currClass.getType(n.f0.accept(this, argu),currFunction);
 
+        debugger.add("[");
         String result = n.f2.accept(this, argu);
-        if(result.endsWith("id")){
-            Variable var = currClass.findInScope(getID(result),currFunction,currClass.ID,currClass);
-            result = var.type;
-        }
-        if(!result.equals("int")){
-            throw new Exception("incompatible types: int cannot be converted to "+ result + " in class " + currClass.ID+' ' + currFunction.ID);
-        }
-        Variable var;
+        debugger.add("]");
+        inappropriateTypeCheck(result,"int");
+
         debugger.add("=");
-        result = n.f5.accept(this, argu);
-        if(result.endsWith("id")){
-             var = currClass.findInScope(getID(result), currFunction, currClass.ID, currClass);
-            result = var.type;
-        }
-
-        if(!result.equals(variable3.type.substring(0,variable3.type.length()-2))){
-            throw new Exception("Variables not matching in array assignment statement in " + currClass.ID+' ' + currFunction.ID);
-        }
-
+        String result1 = n.f5.accept(this, argu);
+        inappropriateTypeCheck(getArrayType(arrayType),result1);
         return _ret;
     }
 
@@ -296,7 +271,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          */
         String _ret=null;
         debugger.add("if(");
-        inappropriateTyping(n.f2.accept(this, argu),"boolean");
+        inappropriateTypeCheck(n.f2.accept(this, argu),"boolean");
         debugger.add(")");
         n.f4.accept(this, argu);
         debugger.add("else {");
@@ -314,45 +289,41 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          * f4 -> Statement()
          */
         String _ret=null;
-        inappropriateTyping(n.f2.accept(this, argu),"boolean");
+        inappropriateTypeCheck(n.f2.accept(this, argu),"boolean");
         n.f4.accept(this, argu);
         return _ret;
     }
 
 
-    //expressions
+
+
+//expressions
+    public void Expressions(String a, String b, String wantedType1, String wantedType2)throws Exception{
+
+        a = cleanupPrimex(a);
+        b = cleanupPrimex(b);
+        if(!ST.inPrimaryTypes(a)){
+            a = currClass.getType(a,currFunction);
+        }
+        if (!a.equals(wantedType1)) {
+            throw new Exception("inappropriate typing in " + currClass.ID +' '+ currFunction.ID);
+        }
+        if(!ST.inPrimaryTypes(b)){
+            b = currClass.getType(b,currFunction);
+        }
+        if (!b.equals(wantedType2)) {
+            throw new Exception("inappropriate typing in " + currClass.ID +' '+ currFunction.ID);
+        }
+
+
+
+    }
 
     public String visit(Expression n, SymbolTable argu) throws Exception {
 
 
         String temp = cleanupPrimex(n.f0.accept(this, argu));
-        return decodeExpression(temp);
-    }
-
-    private String decodeExpression(String result)throws Exception {
-        if(inPrimaryTypes(result)){
-            return result;
-        }
-
-        Variable var = currClass.findInScope(getID(result),currFunction,currClass.ID,currClass);
-        if(var == null){
-            Class a = scopeSearch(getID(result));
-            var = new Variable();
-            var.type = a.ID;
-        }
-        return var.type;
-
-
-    }
-
-    public void Expressions(String a, String b, String wantedType1, String wantedType2)throws Exception{
-
-
-
-        a = cleanupPrimex(a);
-        b = cleanupPrimex(b);
-
-        inappropriateTyping(a ,b ,wantedType1, wantedType2);
+        return decodePrimEx(temp);
     }
 
     public String visit(AndExpression n, SymbolTable argu) throws Exception {
@@ -429,39 +400,25 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          * f2 -> PrimaryExpression() int
          * f3 -> "]"
          */
-        String _ret=null;
+        String _ret = null;
         String a = n.f0.accept(this, argu), anew;
         anew = cleanupPrimex(a);
         if(!anew.equals(a)){
             throw new Exception("cannot use array lookup on a newly allocated expression in " + currClass.ID + currFunction.ID);
         }
-        if(a.endsWith("id")){
-            anew = getID(a);
-        }else{
-            throw new Exception("cannot use array lookup on literal in " + currClass.ID + currFunction.ID);
-        }
         debugger.add("[");
-        Variable var = currClass.findInScope(anew,currFunction, currClass.ID, currClass);
-        if(var == null){
-            throw new Exception("cannot find symbol "+ anew+" in " + currClass.ID + currFunction.ID);
-        }
-        if(!var.type.endsWith("[]")){
+        anew=decodePrimEx(anew);
+        if(!anew.endsWith("[]")){
             throw new Exception("cannot use array lookup on non-array variable in " + currClass.ID + currFunction.ID);
         }
-
-
-
+        anew = getArrayType(anew);
         String b = n.f2.accept(this, argu), bnew;
-        bnew = cleanupPrimex(b);
-        if(bnew.endsWith("id")){
-            bnew = getID(bnew);
-            inappropriateTyping(currClass.findInScope(bnew,currFunction, currClass.ID, currClass).type,"int");
-        }else {
-            inappropriateTyping(bnew,"int");
-        }
+        bnew = decodePrimEx(cleanupPrimex(b));
+        inappropriateTypeCheck(bnew,"int");
         debugger.add("]");
 
-        return var.type.substring(0,var.type.length() -2);
+        return anew;
+
     }
 
     public String visit(ArrayLength n, SymbolTable argu) throws Exception {
@@ -470,20 +427,14 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          * f1 -> "."
          * f2 -> "length"
          */
-        String _ret=null;
-        String string = n.f0.accept(this, argu),type;
-        Variable var;
-        cleanupPrimex(string);
-        if(string.endsWith("id")){
-            var = currClass.findInScope(getID(string),currFunction, currClass.ID, currClass);
-            type=var.type;
-        }else{
-            type = string;
-        }
-        if(!type.endsWith("[]")){
+
+        String a = n.f0.accept(this, argu), anew;
+        anew = decodePrimEx(cleanupPrimex(a));
+        debugger.add(".length");
+        if(!anew.endsWith("[]")){
             throw new Exception("Length operator cannot be used on something that's not array.");
         }
-        return type.substring(0,type.length()-2);
+        return getArrayType(anew);
     }
 
     public String visit(MessageSend n, SymbolTable argu) throws Exception {
@@ -496,25 +447,21 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          * f5 -> ")"
          */
 
-        String classID,oldID = n.f0.accept(this, argu);
+        String classID, oldID = n.f0.accept(this, argu),type;
         Class aClass;
-        Variable variable;
         ArrayList<String> localArgList;
 
         classID = cleanupPrimex(oldID);
 
         debugger.add(".");
-
-        if(!oldID.equals(classID)){
-            aClass = scopeSearch(getID(classID));
-        }else {
-            variable = currClass.findInScope(getID(classID),currFunction, currClass.ID, currClass);
-            aClass = scopeSearch(variable.type);
+        type = decodePrimEx(classID);
+        if(ST.primaryTypes.contains(type)){ //if is int bool etc
+            throw new Exception("Cannot be dereferenced in " + currClass.ID+' ' + currFunction.ID);
         }
-
+        aClass = scopeSearch(type);
         String functID = n.f2.accept(this, argu);
         debugger.add("(");
-        if(!aClass.findFunctionInScope(getID(functID))){
+        if(!aClass.findFunctionInScope(functID)){
             throw new Exception("Can't find symbol " + classID +" in class " + aClass.ID);
         }
         argStack.add(new ArrayList<>());
@@ -524,15 +471,10 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         argStackIndex--;
         argStack.remove(argStack.size()-1);
         debugger.add(")");
-        Function funct = functionSignatureSearch(aClass.ID,getID(functID) , localArgList);
-        //return funct type
+        Function funct = functionSignatureSearch(aClass.ID,functID, localArgList);
         return funct.returnType;
+
     }
-
-
-
-
-    //for messageSend
 
     public String visit(ExpressionList n, SymbolTable argu) throws Exception {
         /*
@@ -545,7 +487,6 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         n.f1.accept(this, argu);
         return _ret;
     }
-
 
     public String visit(ExpressionTerm n, SymbolTable argu) throws Exception {
         /*
@@ -567,13 +508,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
 
 
 
-
-
-
-
-
-
-    //primary expressions
+//primary expressions
     public String visit(Identifier n, SymbolTable argu) throws Exception {
         debugger.add(n.f0.toString());
         return n.f0.toString();
@@ -592,9 +527,8 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
     }
     public String visit(ThisExpression n, SymbolTable argu) throws Exception {
         debugger.add(n.f0.toString());
-        return n.f0.toString()+"id";
+        return n.f0.toString();
     }
-
     public String visit(BooleanArrayAllocationExpression n, SymbolTable argu) throws Exception {
         String _ret=null;
         /*
@@ -607,7 +541,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         debugger.add(n.f0.toString());
         debugger.add(n.f1.toString() + '[');
         String type = n.f3.accept(this, argu);
-        inappropriateTyping(type,"int");
+        inappropriateTypeCheck(type,"int");
         debugger.add("]");
         return "new boolean[]";
     }
@@ -623,7 +557,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
         debugger.add(n.f0.toString());
         debugger.add(n.f1.toString() + '[');
         String type = n.f3.accept(this, argu);
-        inappropriateTyping(type,"int");
+        inappropriateTypeCheck(type,"int");
         debugger.add("]");
         return "new int[]";
     }
@@ -643,7 +577,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
     }
 
 
-    //clauses
+//clauses
     public String visit(NotExpression n, SymbolTable argu) throws Exception {
         String _ret=null;
         /*
@@ -652,7 +586,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
          */
         debugger.add("!");
         String type =n.f1.accept(this, argu);
-        inappropriateTyping(type,"boolean");
+        inappropriateTypeCheck(type,"boolean");
         return type;
     }
     public String visit(BracketExpression n, SymbolTable argu) throws Exception {
@@ -669,7 +603,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
     }
 
 
-    //types (for currFunctionSearch)
+//types (for currFunctionSearch)
 
     public String visit(BooleanType n, SymbolTable argu) throws Exception {
         /*
@@ -691,6 +625,7 @@ public class Pass2 extends GJDepthFirst<String,SymbolTable> {
     public String visit(IntegerArrayType n, SymbolTable argu) throws Exception {
         return "int[]";
     }
+
 
 
 

@@ -158,7 +158,6 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
         aClass.ID = n.f1.accept(this, argu);
 
         aClass.Inheritance = n.f3.accept(this, argu);
-        //argu.copyClass(scope);
 
         n.f5.accept(this, argu);
         aClass.Variables.addAll(variablesCollector);

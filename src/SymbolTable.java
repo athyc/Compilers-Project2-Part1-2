@@ -4,16 +4,35 @@ import java.util.List;
 
 public class SymbolTable {
     List<Class> aClasses = new ArrayList<>() ;
+    List<String> types = new ArrayList<>(Arrays.asList("int", "boolean", "boolean[]", "int[]", "StringArray"));
+    List<String> primaryTypes = new ArrayList<>(Arrays.asList("int", "boolean", "boolean[]", "int[]", "StringArray"));
+    List<String> classNames = new ArrayList<>();
     void print(String str){
         System.out.println(str);
     }
 
+    public boolean inPrimaryTypes(String type){
+        return types.contains(type);
 
+    }
+    public int getVarSize(String varType){
+        if(varType.equals("boolean")){
+            return 1;
+        }
+        if(varType.equals("int")  ){
+            return 4;
+        }
+        if(varType.equals("int[]") || varType.equals("boolean[]") || classNames.contains(varType)){
+            return 8;
+        }
+        return 0;
+    }
     public void validateST() throws Exception{
 
-        List<String> types = new ArrayList<>(Arrays.asList("int", "boolean", "boolean[]", "int[]", "StringArray"));
+
         for (Class aClass : aClasses) {
             types.add(aClass.ID);
+            classNames.add(aClass.ID);
         }
         for (Class aClass : aClasses){
 
@@ -22,6 +41,7 @@ public class SymbolTable {
                     throw new Exception("Error unknown type: " + variable.type + " in class " + aClass.ID);
 
                 }
+
             }
             for (Function function: aClass.Functions){
                 if(!types.contains(function.returnType) && ! function.returnType.equals("void")){
@@ -47,8 +67,65 @@ public class SymbolTable {
             }
             //print("Validation done " + scope.ID);
         }
+
+        for (Class aClass : aClasses) {
+            for (Variable variable: aClass.Variables){
+                //System.out.println(aClass.ID + "."+variable.name+" : " + aClass.varOffset);
+                aClass.varOffset+=getVarSize(variable.type);
+            }
+
+            for (Function function: aClass.Functions){
+                if(!aClass.isOverriden(function)){
+                    //System.out.println(aClass.ID + "."+aClass.varOffset);
+                    aClass.functOffset+=8;
+                }
+            }
+            aClass.varLocalOffsett = aClass.varOffset;
+            aClass.functLocalOffset=aClass.functOffset;
+            aClass.functOffset=0;
+            aClass.varOffset=0;
+
+        }
+        for (Class aClass : aClasses) {
+            if (aClass.Inheritance!=null){
+                findInheritanceOffset(aClass, aClass);
+            }
+            //print("Validation done " + scope.ID);
+        }
+
+        for (Class aClass : aClasses) {
+            for (Variable variable: aClass.Variables){
+                System.out.println(aClass.ID + "."+variable.name+" : " + (aClass.varOffset+aClass.varInheritedOffset ));
+                aClass.varOffset+=getVarSize(variable.type);
+            }
+
+            for (Function function: aClass.Functions){
+                if(!aClass.isOverriden(function)){
+                    System.out.println(aClass.ID + "."+function.ID+" : " +(aClass.functOffset+aClass.functInheritedOffset  ));
+                    aClass.functOffset+=8;
+                }
+
+            }
+
+            aClass.classSize=aClass.varOffset+aClass.functOffset;
+        }
+
         //print("Validation done");
 
+    }
+
+    private void findInheritanceOffset(Class classSearch, Class superClass) {
+        if(superClass.Inheritance == null){
+            return;
+        }
+        for (Class aClass : aClasses) {
+            if(superClass.Inheritance.equals(aClass.ID)){
+                classSearch.functInheritedOffset+=aClass.functLocalOffset;
+                classSearch.varInheritedOffset+=aClass.varLocalOffsett;
+                findInheritanceOffset(classSearch, aClass);
+                break;
+            }
+        }
     }
 
     private void findInheritance(Class classSearch, Class superClass) throws Exception {
@@ -60,6 +137,7 @@ public class SymbolTable {
             if(superClass.Inheritance.equals(aClass.ID)){
                 classSearch.InheritedVariables.addAll(aClass.Variables);
                 classSearch.InheritedFunctions.addAll(aClass.Functions);
+                classSearch.InheritanceLine.add(aClass.ID);
                 findInheritance(classSearch, aClass);
                 found = true;
                 break;
