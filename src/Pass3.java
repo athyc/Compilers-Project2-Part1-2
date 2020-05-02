@@ -38,7 +38,7 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
                 if(f.arguments.size()!=localArgList.size())continue;
                 for ( i = 0 ; i<f.arguments.size(); i++){
                     v = f.arguments.get(i);
-                    if(!v.type.equals(localArgList.get(i))){
+                    if(!v.type.equals(localArgList.get(i))&& !inInheritanceLine(v.type,localArgList.get(i))){
                         break;
                     }
                 }
@@ -223,8 +223,11 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
 
         if(!result.equals(variable3.type)){
             //if not variable 3 type in inheritance line of class type
+            if((ST.primaryTypes.contains(variable3.type) && !ST.primaryTypes.contains(result)) || (!ST.primaryTypes.contains(variable3.type) && ST.primaryTypes.contains(result))){
+                throw new Exception("Variables not matching in assignment statement in " + currClass.ID+' ' + currFunction.ID+ " one is "+variable3.type +" other is "+result+" in statement "+ Arrays.toString(debugger.toArray()));
+            }
             if(!inInheritanceLine(variable3.type,result)){
-                throw new Exception("Variables not matching in assignment statement in " + currClass.ID+' ' + currFunction.ID);
+                throw new Exception("Variables not matching in assignment statement in " + currClass.ID+' ' + currFunction.ID+ " one is "+variable3.type +" other is "+result+" in statement "+ Arrays.toString(debugger.toArray()));
             }
         }
 //        debugger.clear();
@@ -232,6 +235,9 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
     }
 
     private boolean inInheritanceLine(String type, String result) throws Exception {
+        if(ST.primaryTypes.contains(type) ||ST.primaryTypes.contains(result)){
+            return false;
+        }
         Class a = scopeSearch(type);
         Class b = scopeSearch(result);
         for(String classID:b.InheritanceLine){
@@ -582,7 +588,7 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
         String _ret=null;
 
         String type = n.f1.accept(this, argu);
-        debugger.add("new " + type.substring(0,type.length()-2) +"()");
+        debugger.add("new " + type +"()");
         return "new "+type;
     }
 

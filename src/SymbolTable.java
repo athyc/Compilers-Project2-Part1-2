@@ -132,11 +132,29 @@ public class SymbolTable {
         if(superClass.Inheritance == null){
             return;
         }
+        int i=0;
         boolean found = false;
         for (Class aClass : aClasses) {
             if(superClass.Inheritance.equals(aClass.ID)){
                 classSearch.InheritedVariables.addAll(aClass.Variables);
-                classSearch.InheritedFunctions.addAll(aClass.Functions);
+                for(Function scfunct : aClass.Functions){
+                    for (Function csfunct: classSearch.Functions){
+
+                        if(scfunct.ID.equals(csfunct.ID)){
+                            if(scfunct.arguments.size()!=csfunct.arguments.size() || !scfunct.returnType.equals(csfunct.returnType)){
+                                throw new Exception("Function " + scfunct.ID+" cannot be overloaded must have arguments as inherited function");
+                            }
+                            for(i=0;i<scfunct.arguments.size();i++){
+                                if(!scfunct.arguments.get(i).type.equals(csfunct.arguments.get(i).type)){
+                                    throw new Exception("Function " + scfunct.ID+" cannot be overloaded must have arguments as inherited function!");
+                                }
+                            }
+                        }
+
+                    }
+                    classSearch.InheritedFunctions.add(scfunct);
+                }
+
                 classSearch.InheritanceLine.add(aClass.ID);
                 findInheritance(classSearch, aClass);
                 found = true;

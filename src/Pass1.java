@@ -27,13 +27,13 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
         for (Function function : formalParameterCollector) {
             argChecker = true;
             if (temp.ID.equals(function.ID)) {
+                return true;
+                //if(temp.arguments.size() != function.arguments.size()) return false;
 
-                if(temp.arguments.size() != function.arguments.size()) continue;
-
-                for (i=0 ;i < function.arguments.size();i++ ){
-                    argChecker = argChecker & function.arguments.get(i).type.equals(temp.arguments.get(i).type);
-                }
-                if(argChecker)return true;
+//                for (i=0 ;i < function.arguments.size();i++ ){
+//                    argChecker = argChecker & function.arguments.get(i).type.equals(temp.arguments.get(i).type);
+//                }
+//                if(argChecker)return true;
             }
         }
         return false;
@@ -105,9 +105,9 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
         temp.declarations = new ArrayList<>(variablesCollector);
         variablesCollector.clear();
         formalParameterCollector.clear();
-        //todo if function exists!
+
         if(existsInMethods(temp, methods)){
-            throw new Exception("Function declared twice in scope");
+            throw new Exception("Function with function ID " + temp.ID +"declared twice in scope ");
         }
         methods.add(temp);
         return _ret;
