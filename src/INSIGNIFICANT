@@ -1,44 +1,8 @@
-\/\*(.|\n)*?\*\/
-
-   public String visit(CompareExpression n, SymbolTable argu) throws Exception {
-        /*
-         * f0 -> PrimaryExpression()
-         * f1 -> "<"
-         * f2 -> PrimaryExpression()
-         */
-        Expressions(n.f0.accept(this, argu),n.f2.accept(this, argu),"int","int","<");
-
-        return "boolean";
-    }
-
-    public String visit(PlusExpression n, SymbolTable argu) throws Exception {
-        /*
-         * f0 -> PrimaryExpression()
-         * f1 -> "+"
-         * f2 -> PrimaryExpression()
-         */
-        Expressions(n.f0.accept(this, argu),n.f2.accept(this, argu),"int","int","+");
-
-        return "int";
-    }
-
-    public String visit(MinusExpression n, SymbolTable argu) throws Exception {
-        /*
-         * f0 -> PrimaryExpression()
-         * f1 -> "-"
-         * f2 -> PrimaryExpression()
-         */
-        Expressions(n.f0.accept(this, argu),n.f2.accept(this, argu),"int","int","-");
-        return "int";
-    }
-
-    public String visit(TimesExpression n, SymbolTable argu) throws Exception {
-        /*
-         * f0 -> PrimaryExpression()
-         * f1 -> "*"
-         * f2 -> PrimaryExpression()
-         */
-        Expressions(n.f0.accept(this, argu),n.f2.accept(this, argu),"int","int","*");
-        return "int";
-
-    }
+C:\Users\Athena\Documents\Compilers\trying\minijava_errors\BinarySearch-error.java
+C:\Users\Athena\Documents\Compilers\trying\minijava_errors\BinaryTree-error.java
+C:\Users\Athena\Documents\Compilers\trying\minijava_errors\BubbleSort-error.java
+C:\Users\Athena\Documents\Compilers\trying\minijava_errors\Factorial-error.java
+C:\Users\Athena\Documents\Compilers\trying\minijava_errors\LinearSearch-error.java
+C:\Users\Athena\Documents\Compilers\trying\minijava_errors\LinkedList-error.java
+C:\Users\Athena\Documents\Compilers\trying\minijava_errors\QuickSort-error.java
+C:\Users\Athena\Documents\Compilers\trying\minijava_errors\TreeVisitor-error.java

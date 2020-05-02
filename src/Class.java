@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Class {
@@ -52,7 +53,7 @@ public class Class {
 
         return var;
     }
-    public String getType(String varID, Function function) throws Exception {
+    public String getType(String varID, Function function, List<String> debugger) throws Exception {
         if(varID.equals("this")){
             return this.ID;
         }
@@ -61,7 +62,7 @@ public class Class {
 
         if(var == null)var = findInScopeVariables(varID);
         if(var==null){
-            throw new Exception("Variable" + varID+" not found");
+            throw new Exception("Variable" + varID+" not found " + " in function "+function.ID+ Arrays.toString(debugger.toArray()));
         }
         return var.type;
     }
