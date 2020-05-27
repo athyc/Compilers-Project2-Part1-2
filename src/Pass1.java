@@ -61,7 +61,7 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
 
         function.ID = "main";
         function.returnType = "void";
-        variable.type = "StringArray";
+        variable.type = "String []";
         variable.name = n.f11.accept(this, argu);
         function.arguments = new ArrayList<>();
         function.arguments.add(variable);
@@ -109,6 +109,7 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
         if(existsInMethods(temp, methods)){
             throw new Exception("Function with function ID " + temp.ID +"declared twice in scope ");
         }
+
         methods.add(temp);
         return _ret;
     }
@@ -135,6 +136,9 @@ public class Pass1 extends GJDepthFirst<String,SymbolTable> {
             if(aClass.ID.equals(class1.ID)){
                 throw new Exception("Two classes have the same name " + aClass.ID);
             }
+        }
+        for (Function f:aClass.Functions){
+            f.InheritedFrom=aClass.ID;
         }
         argu.aClasses.add(aClass);
         return _ret;

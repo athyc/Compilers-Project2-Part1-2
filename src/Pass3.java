@@ -55,7 +55,7 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
 
     }
     private ArrayList<String> decodeArgList(ArrayList<String> argList)throws Exception{
-        List<String> types = new ArrayList<>(Arrays.asList("int", "boolean", "boolean[]", "int[]", "StringArray"));
+        List<String> types = new ArrayList<>(Arrays.asList("int", "boolean", "boolean[]", "int[]", "String []"));
         Variable variable;
         ArrayList<String> rval = new ArrayList<>();
         for (String arg:argList){
@@ -304,6 +304,12 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
         String _ret=null;
         inappropriateTypeCheck(n.f2.accept(this, argu),"boolean");
         n.f4.accept(this, argu);
+        return _ret;
+    }
+    public String visit(PrintStatement n, SymbolTable argu) throws Exception {
+        String _ret=null;
+
+        inappropriateTypeCheck(n.f2.accept(this, argu),"int");
         return _ret;
     }
 
@@ -585,7 +591,7 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
          * f3 -> ")"
          */
 
-        String _ret=null;
+
 
         String type = n.f1.accept(this, argu);
         debugger.add("new " + type +"()");

@@ -1,0 +1,95 @@
+   public String visit(AssignmentStatement n, LLVMRedux argu) throws Exception {
+/*
+    * f0 -> Identloopier()
+    * f1 -> "="
+    * f2 -> Expression()
+    * f3 -> ";"
+    */
+
+      n.f0.accept(this, argu);
+      n.f1.accept(this, argu);
+      n.f2.accept(this, argu);
+      n.f3.accept(this, argu);
+      return null;
+   }
+
+   public String visit(ArrayAssignmentStatement n, LLVMRedux argu) throws Exception {
+   /*
+    * f0 -> Identloopier()
+    * f1 -> "["
+    * f2 -> Expression()
+    * f3 -> "]"
+    * f4 -> "="
+    * f5 -> Expression()
+    * f6 -> ";"
+    */
+
+      n.f0.accept(this, argu);
+      n.f1.accept(this, argu);
+      n.f2.accept(this, argu);
+      n.f3.accept(this, argu);
+      n.f4.accept(this, argu);
+      n.f5.accept(this, argu);
+      n.f6.accept(this, argu);
+      return null;
+   }
+
+   public String visit(IfStatement n, LLVMRedux argu) throws Exception {
+   /*
+    * f0 -> "loop"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> Statement()
+    * f5 -> "else"
+    * f6 -> Statement()
+    */
+
+      n.f0.accept(this, argu);
+      n.f1.accept(this, argu);
+      n.f2.accept(this, argu);
+      n.f3.accept(this, argu);
+      n.f4.accept(this, argu);
+      n.f5.accept(this, argu);
+      n.f6.accept(this, argu);
+      return null;
+   }
+
+   public String visit(WhileStatement n, LLVMRedux argu) throws Exception {
+   /*
+    * f0 -> "while"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> Statement()
+    */
+
+
+      //first loop tag goes here
+      n.f2.accept(this, argu);
+      //branch between second and third loop with accept result
+      //second loop tag goes here
+      n.f3.accept(this, argu);
+
+      n.f4.accept(this, argu);
+      //branch first loop
+      //third loop tag
+      return null;
+   }
+
+   public String visit(PrintStatement n, LLVMRedux argu) throws Exception {
+   /*
+    * f0 -> "System.out.println"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> ";"
+    */
+
+      n.f0.accept(this, argu);
+      n.f1.accept(this, argu);
+      n.f2.accept(this, argu);
+      n.f3.accept(this, argu);
+      n.f4.accept(this, argu);
+      return null;
+   }

@@ -10,7 +10,8 @@ public class Class {
     List<Function> InheritedFunctions = new ArrayList<>();
     List<Variable> InheritedVariables = new ArrayList<>();
     List<String> InheritanceLine = new ArrayList<>();
-
+    List<Function> VtableTemplate = new ArrayList<>();
+    List<Variable> VariablesTemplate = new ArrayList<>();
     public Variable findInScopeVariables(String varID){
         for (Variable var:Variables) {
             if(var.name.equals(varID))return var;
