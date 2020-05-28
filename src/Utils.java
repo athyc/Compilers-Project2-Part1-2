@@ -28,7 +28,7 @@ public class Utils {
     }
     String []getConditionTags(){
         String [] array = new String[2];
-        array[0] = "if"+ifTag;
+        array[0] = "if"+(ifTag++);
         array[1] = "if"+(ifTag++);
         return array;
     }
@@ -126,11 +126,10 @@ public class Utils {
     }
 
 
-    public String printFP(String type, String s, String ID) {
+    public void printFP(String type, String s, String ID) {
         FPAlloc.append(NumberedIndentation(1)).append("%").append(ID).append(" = alloca ").append(type).append("\n");
         FPAlloc.append(NumberedIndentation(1)).append("store ").append(type).append(" ").append(s).append(ID).append(", ").append(type).append("*").append(" %").append(ID).append("\n");
         print(type+s+ID);
-        return null;
     }
     String getFPallocs(){
         String r=FPAlloc.toString();
@@ -162,7 +161,7 @@ public class Utils {
                 return getClassVariable(v);
             }
         }
-        return null;
+        return "decode identifier not found "+Identifier;
     }
 
     private String getClassVariable(Variable v) {
@@ -203,7 +202,7 @@ public class Utils {
             }
         }
 
-        return null;
+        return "get identifier type not found "+Identifier;
     }
 
     public String pointer(String type) {
@@ -230,7 +229,7 @@ public class Utils {
             println(rv +" = bitcast i8* "+reg1+" to i32*");
             return rv;
         }else{
-            return null;
+            return "arraydifferenciaition not found "+reg1;
         }
     }
 
@@ -317,7 +316,7 @@ public class Utils {
                 return reg1;
             }
         }
-        return null;
+        return " decode primex identifier not found "+Identifier;
     }
     public String getArg(String result) {
         String temp;
@@ -331,7 +330,7 @@ public class Utils {
         }else if(result.equals("this")){
             return "%this";
         }
-        return null;
+        return "getarg not found "+result;
     }
     public void allocationSegment(String allocSize, String exprReg, String[] array,int typeFactor) {
         println(allocSize+" = add i32 "+typeFactor+", "+exprReg);
@@ -344,12 +343,14 @@ public class Utils {
         println(array[0]+":");
     }
     public String getRegType(String primexResult) {
+        if(primexResult.equals("%this"))return currClass.ID;
         for (Variable v: essRegs){
             if (v.name.equals(primexResult)){
                 return v.type;
             }
         }
-        return null;
+
+        return "getReg Type not found "+primexResult;
     }
     protected String argsToString(List<Variable> arguments) {
         StringBuilder rv = new StringBuilder();

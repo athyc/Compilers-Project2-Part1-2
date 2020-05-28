@@ -42,7 +42,7 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         }
 
         //end of vtable creation
-        //u.declare();
+        u.declare();
         //todo add offsets.
     }
     public String visit(MainClass n, LLVMRedux argu) throws Exception {
@@ -138,7 +138,7 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         u.simplePrint(u.getFPallocs());
 
         n.f8.accept(this, argu);
-        u.println("ret "+u.javaTypeToLLVMType(u.currFunction.returnType)+n.f10.accept(this, argu));
+        u.println("ret "+u.javaTypeToLLVMType(u.currFunction.returnType)+" "+n.f10.accept(this, argu));
 
         u.decreaseIndentation();
         u.println("}");
@@ -224,12 +224,13 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
          * f6 -> Statement()
          */
         String[] array =u.getConditionTags();
-        u.println("br i1 "+ n.f2.accept(this, argu)+"label "+array[0]+", "+array[1]);
+        u.println("br i1 "+ n.f2.accept(this, argu)+" label "+array[0]+", "+array[1]);
         u.increaseIndentation();
-        u.println(array[0]);
+        u.println(array[0]+":");
         n.f4.accept(this, argu);
-        u.println(array[1]);
+        u.println(array[1]+":");
         n.f6.accept(this, argu);
+        u.decreaseIndentation();
         return null;
     }
     public String visit(PrintStatement n, LLVMRedux argu) throws Exception {
@@ -257,12 +258,13 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         //first loop tag goes here
         String[]  tag = u.getWhileTags();
         u.increaseIndentation();
-        u.println(tag[0]);
+        u.println(tag[0]+":");
         u.println("br i1 "+ n.f2.accept(this, argu)+", label "+tag[1]+", label "+tag[2]);
-        u.println(tag[1]);
+        u.println(tag[1]+":");
         n.f4.accept(this, argu);
         u.println("br label "+tag[0]);
-        u.println(tag[2]);
+        u.println(tag[2]+":");
+        u.decreaseIndentation();
         return null;
     }
 
@@ -443,13 +445,19 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         u.println(loader2+" = load i8*, i8** "+gepr);
         //String functId = ;
         String bitcast2 = u.getReg();
-        u.print(bitcast2+" = bitcast i8* "+loader2+" to "+u.javaTypeToLLVMType(f.returnType)+"(i8*, ");
-        for (Variable v: f.arguments){
-            u.simpleInlinePrint(u.javaTypeToLLVMType(v.type));
-            if (!(i==f.arguments.size()-1))u.simpleInlinePrint(", ");
-            i++;
+        //if has only one argument copy paste command below without comma and closed parentheses
+        if(f.arguments.size()==0){
+            u.println(bitcast2+" = bitcast i8* "+loader2+" to "+u.javaTypeToLLVMType(f.returnType)+"(i8*)");
+        }else{
+            u.print(bitcast2+" = bitcast i8* "+loader2+" to "+u.javaTypeToLLVMType(f.returnType)+"(i8*, ");
+            //else c&c c&v comm above & loop
+            for (Variable v: f.arguments){
+                u.simpleInlinePrint(u.javaTypeToLLVMType(v.type));
+                if (!(i==f.arguments.size()-1))u.simpleInlinePrint(", ");
+                i++;
+            }
+            u.simpleInlinePrint(")*");
         }
-        u.println(")*");
 
         argStack.add(new ArrayList<>());
         argStackIndex++;

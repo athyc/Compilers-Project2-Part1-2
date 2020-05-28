@@ -99,22 +99,22 @@ public class SymbolTable {
         }
 
 
-        for (Class aClass : aClasses) {
-            for (Variable variable: aClass.Variables){
-                System.out.println(aClass.ID + "."+variable.name+" : " + (aClass.varOffset+aClass.varInheritedOffset ));
-                aClass.varOffset+=getVarSize(variable.type);
-            }
-
-            for (Function function: aClass.Functions){
-                if(!aClass.isOverriden(function)){
-                    System.out.println(aClass.ID + "."+function.ID+" : " +(aClass.functOffset+aClass.functInheritedOffset  ));
-                    aClass.functOffset+=8;
-                }
-
-            }
-
-            aClass.classSize=aClass.varOffset+aClass.functOffset;
-        }
+//        for (Class aClass : aClasses) {
+//            for (Variable variable: aClass.Variables){
+//                System.out.println(aClass.ID + "."+variable.name+" : " + (aClass.varOffset+aClass.varInheritedOffset ));
+//                aClass.varOffset+=getVarSize(variable.type);
+//            }
+//
+//            for (Function function: aClass.Functions){
+//                if(!aClass.isOverriden(function)){
+//                    System.out.println(aClass.ID + "."+function.ID+" : " +(aClass.functOffset+aClass.functInheritedOffset  ));
+//                    aClass.functOffset+=8;
+//                }
+//
+//            }
+//
+//            aClass.classSize=aClass.varOffset+aClass.functOffset;
+//        }
 
         for (Class c : aClasses){
 

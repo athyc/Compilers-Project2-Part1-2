@@ -23,16 +23,17 @@ class Main {
 				LLVMRedux nST = new LLVMRedux();
 				fis = new FileInputStream(arg);
 				MiniJavaParser parser = new MiniJavaParser(fis);
-				System.err.println("Program parsed successfully.");
+				//System.err.println("Program parsed successfully.");
 				Pass1 eval = new Pass1();
 				Goal root = parser.Goal();
-				System.out.println(root.accept(eval, st));
+				root.accept(eval, st);
 				st.validateST();
 				Pass3 secondEval = new Pass3(st);
-				System.out.println(root.accept(secondEval, st));
+				root.accept(secondEval, st);
 				st.Reduct(nST);
 				LLVMGen llvmGen = new LLVMGen(nST);
 				root.accept(llvmGen,nST);
+				System.out.println("done");
 			}
 			catch(ParseException ex){
 				System.out.println(ex.getMessage());
