@@ -1,6 +1,42 @@
-C:\Users\Athena\Documents\Compilers\trying\llvm_simple_inputs\And.java
-C:\Users\Athena\Documents\Compilers\trying\llvm_simple_inputs\Arrays.java
-C:\Users\Athena\Documents\Compilers\trying\llvm_simple_inputs\BooleanArrays.java
-C:\Users\Athena\Documents\Compilers\trying\llvm_simple_inputs\Classes.java
-C:\Users\Athena\Documents\Compilers\trying\llvm_simple_inputs\If.java
-C:\Users\Athena\Documents\Compilers\trying\llvm_simple_inputs\Simple.java
+C:\Users\athyy\Documents\examples\java\And.java
+C:\Users\athyy\Documents\examples\java\Arrays.java
+C:\Users\athyy\Documents\examples\java\BooleanArrays.java
+C:\Users\athyy\Documents\examples\java\Classes.java
+C:\Users\athyy\Documents\examples\java\If.java
+C:\Users\athyy\Documents\examples2\java\Simple.java
+
+C:\Users\athyy\Documents\examples2\java\BinaryTree.java
+C:\Users\athyy\Documents\examples2\java\BubbleSort.java
+C:\Users\athyy\Documents\examples2\java\Factorial.java
+C:\Users\athyy\Documents\examples2\java\LinearSearch.java
+C:\Users\athyy\Documents\examples2\java\LinkedList.java
+C:\Users\athyy\Documents\examples2\java\MoreThan4.java
+C:\Users\athyy\Documents\examples2\java\QuickSort.java
+C:\Users\athyy\Documents\examples2\java\TreeVisitor.java
+
+/home/users/thp06/clang/clang -o out1 BinaryTree.ll
+./out1 > ../theirllresults/bt
+/home/users/thp06/clang/clang -o out1 BubbleSort.ll
+./out1 > ../theirllresults/bs
+/home/users/thp06/clang/clang -o out1 Factorial.ll
+./out1 > ../theirllresults/fac
+/home/users/thp06/clang/clang -o out1 LinearSearch.ll
+./out1 > ../theirllresults/ls
+/home/users/thp06/clang/clang -o out1 LinkedList.ll
+./out1 > ../theirllresults/ll
+/home/users/thp06/clang/clang -o out1 MoreThan4.ll
+./out1 > ../theirllresults/mt4
+/home/users/thp06/clang/clang -o out1 QuickSort.ll
+./out1 > ../theirllresults/qs
+/home/users/thp06/clang/clang -o out1 TreeVisitor.ll
+./out1 > ../theirllresults/tv
+
+C:\Users\athyy\IdeaProjects\MyresultsOfLL\bs
+C:\Users\athyy\IdeaProjects\MyresultsOfLL\bt
+C:\Users\athyy\IdeaProjects\MyresultsOfLL\fac
+C:\Users\athyy\IdeaProjects\MyresultsOfLL\ll
+C:\Users\athyy\IdeaProjects\MyresultsOfLL\ls
+C:\Users\athyy\IdeaProjects\MyresultsOfLL\mt4
+C:\Users\athyy\IdeaProjects\MyresultsOfLL\qs
+C:\Users\athyy\IdeaProjects\MyresultsOfLL\tv
+

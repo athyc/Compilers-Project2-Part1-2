@@ -217,6 +217,9 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
         if(variable3 == null){
             throw new Exception("Variable "+var1ID+" not found in " + currClass.ID+" function " + currFunction.ID+" in statement "+ Arrays.toString(debugger.toArray()));
         }
+        if(variable3.type.equals("String")||variable3.type.equals("String[]")){
+            throw new Exception("Operations between the arguments of main are henceforth not allowed."+ Arrays.toString(debugger.toArray()));
+        }
 
         String result = n.f2.accept(this, argu);
         //look for both values
@@ -260,7 +263,9 @@ public class Pass3 extends GJDepthFirst <String,SymbolTable>{
          */
         String _ret=null;
         String arrayType = currClass.getType(n.f0.accept(this, argu),currFunction, debugger);
-
+        if(arrayType.equals("String")||arrayType.equals("String[]")){
+            throw new Exception("Operations between the arguments of main are henceforth not allowed."+ Arrays.toString(debugger.toArray()));
+        }
         debugger.add("[");
         String result = n.f2.accept(this, argu);
         debugger.add("]");

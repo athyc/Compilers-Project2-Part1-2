@@ -1,10 +1,6 @@
 import syntaxtree.Goal;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
 
 class Main {
     public static void main (String [] args) throws IOException {
@@ -14,8 +10,10 @@ class Main {
 			System.err.println("Usage: java Driver <inputFile1> <inputFile2> ... <inputFilek>");
 			System.exit(1);
 		}
+
 		for(String arg:args){
 			System.out.println(arg);
+			BufferedWriter bw = new BufferedWriter(new FileWriter(getOutputFileName(arg)));
 			try{
 
 				fis=null;
@@ -31,7 +29,7 @@ class Main {
 				Pass3 secondEval = new Pass3(st);
 				root.accept(secondEval, st);
 				st.Reduct(nST);
-				LLVMGen llvmGen = new LLVMGen(nST);
+				LLVMGen llvmGen = new LLVMGen(nST, bw);
 				root.accept(llvmGen,nST);
 				System.out.println("done");
 			}
@@ -44,6 +42,7 @@ class Main {
 			}
 			catch (Exception ex){
 				System.err.println("Error in parsing");
+				bw.close();
 				System.err.println(ex.getMessage());
 			}
 			finally{
@@ -54,6 +53,19 @@ class Main {
 					System.err.println(ex.getMessage());
 				}
 			}
+			bw.close();
 		}
+
     }
+
+	private static String getOutputFileName(String arg) {
+    	StringBuilder rv = new StringBuilder();
+		for (int i=arg.length()-1;i>=0;i--){
+			if(arg.charAt(i)=='\\'){
+				return rv.reverse().toString().substring(0,rv.length()-5)+".ll";
+			}
+			rv.append(arg.charAt(i));
+		}
+		return rv.reverse().toString();
+	}
 }

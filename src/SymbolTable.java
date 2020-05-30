@@ -170,7 +170,7 @@ public class SymbolTable {
                 }
             }
             c.VtableTemplate.addAll(VTableTemplate);
-            print("done");
+            //print("done");
             Collections.reverse(c.InheritedVariables);
             c.VariablesTemplate.addAll(c.InheritedVariables);
             c.VariablesTemplate.addAll(c.Variables);
@@ -234,7 +234,7 @@ public class SymbolTable {
                 break;
             }
         }
-        print("done");
+        //print("done");
         if(!found){
             throw new Exception("Error! Unknown class " + superClass.Inheritance);
         }
@@ -251,7 +251,7 @@ public class SymbolTable {
             offset=0;
             for (Function f: temp.VtableTemplate){
                 f.offset=offset;
-                offset+=8;
+                offset+=1;
             }
             newST.aClasses.add(temp);
 

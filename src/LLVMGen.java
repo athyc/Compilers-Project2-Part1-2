@@ -1,16 +1,17 @@
 import syntaxtree.*;
 import visitor.GJDepthFirst;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.ListIterator;
-import java.util.Objects;
 
 public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
     private LLVMRedux ST;
     //functions
-    private Utils u = new Utils();
+    private Utils u ;
     String FPAllocs;
     private int argStackIndex = -1;
+    BufferedWriter bw;
     ArrayList<ArrayList<String>> argStack = new ArrayList<>();
     private LLVMClass scopeSearch(String scopeID) {
         for(LLVMClass aClass : ST.aClasses){
@@ -20,25 +21,32 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         }
         return null;
     }
-    public LLVMGen(LLVMRedux ST){
+    public LLVMGen(LLVMRedux ST, BufferedWriter bw) throws IOException {
         this.ST = ST;
+        u = new Utils(bw);
+        this.bw=bw;
         //start of vtable creation
-        System.out.println("@."+ST.aClasses.get(0).ID+"_vtable = global [0 x i8*] []");
+        //System.out.println("@."+ST.aClasses.get(0).ID+"_vtable = global [0 x i8*] []");
+        bw.write("@."+ST.aClasses.get(0).ID+"_vtable = global [0 x i8*] []"+"\n");
         for (int i=1;i<ST.aClasses.size();i++){
             LLVMClass curr = ST.aClasses.get(i);
-            System.out.print("@."+curr.ID+"_vtable = global ["+curr.VtableTemplate.size()+" x i8*] [");
+            //System.out.print();
+            bw.write("@."+curr.ID+"_vtable = global ["+curr.VtableTemplate.size()+" x i8*] [");
             int j=0;
             for (Function f: curr.VtableTemplate){
                 String args = u.argsToString(f.arguments);
-                System.out.print("i8* bitcast ( " + u.javaTypeToLLVMType(f.returnType)+" (i8*"+args+")* @"+f.InheritedFrom+"."+f.ID+" to i8*)");
+                //System.out.print();
+                bw.write("i8* bitcast ( " + u.javaTypeToLLVMType(f.returnType)+" (i8*"+args+")* @"+f.InheritedFrom+"."+f.ID+" to i8*)");
                 if(j==curr.VtableTemplate.size()-1){
-                    System.out.println("]\n");
+                    //System.out.println();
+                    bw.write("]\n");
                 }else{
-                    System.out.println(",");
+                    //System.out.println(",");
+                    bw.write(",");
                 }
                 j++;
             }
-            if(j==0)System.out.println("]");
+            if(j==0)/*System.out.println("]");*/bw.write("]");
         }
 
         //end of vtable creation
@@ -66,7 +74,8 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
          * f16 -> "}"
          * f17 -> "}"
          */
-        System.out.println("define i32 @main() {");
+        //System.out.println();
+        bw.write("define i32 @main() {"+"\n");
         u.increaseIndentation();
         u.currClass=argu.aClasses.get(0);
         u.currFunction=u.currClass.VtableTemplate.get(0);
@@ -75,7 +84,9 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         n.f15.accept(this, argu);
 
         u.decreaseIndentation();
-        System.out.println("\tret i32 0\n" +"}");
+        //System.out.println();
+        bw.write("\tret i32 0\n" +"}\n");
+        u.regReset();
         return null;
     }
     public String visit(ClassDeclaration n, LLVMRedux argu) throws Exception {
@@ -131,12 +142,12 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
          */
         String _ret=null;
         u.setCurrFunction(u.currClass.getFunction(n.f2.accept(this, argu)));
-        u.print("define " + n.f1.accept(this, argu)+" @" + u.getCurrClass().ID+"."+u.currFunction.ID+"(");
+        u.print("define " + n.f1.accept(this, argu)+" @" + u.getCurrClass().ID+"."+u.currFunction.ID+"(i8* %this");
         n.f4.accept(this, argu);
         u.println(") {");
         u.increaseIndentation();
         u.simplePrint(u.getFPallocs());
-
+        n.f7.accept(this,argu);
         n.f8.accept(this, argu);
         u.println("ret "+u.javaTypeToLLVMType(u.currFunction.returnType)+" "+n.f10.accept(this, argu));
 
@@ -151,7 +162,7 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
          * f1 -> FormalParameterTail()
          */
         String _ret=null;
-        u.print("i8* %this, ");
+        u.print(", ");
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         return _ret;
@@ -207,7 +218,14 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
          * f6 -> ";"
          */
         String storeArg1 = u.arrayAssignment(n.f0.accept(this,argu),n.f2.accept(this,argu));
-        u.println("store "+u.javaTypeToLLVMType(u.getRegType(storeArg1))+" "+n.f5.accept(this, argu)+", "+u.pointer(u.javaTypeToLLVMType(u.getRegType(storeArg1)))+" "+storeArg1);
+        //if identifier's type is boolean array, zext i1 f5 to i8 and then store to the f1 result
+        if(u.getRegType(storeArg1).equals("boolean[]")){
+            String zext = u.getReg();
+            u.println(zext+" = zext i1 "+ n.f5.accept(this, argu)+" to i8");
+            u.println("store "+u.dereference(u.javaTypeToLLVMType(u.getRegType(storeArg1)))+" "+zext+", "+(u.javaTypeToLLVMType(u.getRegType(storeArg1)))+" "+storeArg1);
+        }else{
+            u.println("store "+u.dereference(u.javaTypeToLLVMType(u.getRegType(storeArg1)))+" "+n.f5.accept(this, argu)+", "+(u.javaTypeToLLVMType(u.getRegType(storeArg1)))+" "+storeArg1);
+        }
 
 
 
@@ -224,12 +242,15 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
          * f6 -> Statement()
          */
         String[] array =u.getConditionTags();
-        u.println("br i1 "+ n.f2.accept(this, argu)+" label "+array[0]+", "+array[1]);
+        u.println("br i1 "+ n.f2.accept(this, argu)+", label %"+array[0]+", label %"+array[1]);
         u.increaseIndentation();
         u.println(array[0]+":");
         n.f4.accept(this, argu);
+        u.println("br label %"+array[2]);
         u.println(array[1]+":");
         n.f6.accept(this, argu);
+        u.println("br label %"+array[2]);
+        u.println(array[2]+":");
         u.decreaseIndentation();
         return null;
     }
@@ -258,11 +279,12 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         //first loop tag goes here
         String[]  tag = u.getWhileTags();
         u.increaseIndentation();
+        u.println("br label %"+tag[0]);
         u.println(tag[0]+":");
-        u.println("br i1 "+ n.f2.accept(this, argu)+", label "+tag[1]+", label "+tag[2]);
+        u.println("br i1 "+ n.f2.accept(this, argu)+", label %"+tag[1]+", label %"+tag[2]);
         u.println(tag[1]+":");
         n.f4.accept(this, argu);
-        u.println("br label "+tag[0]);
+        u.println("br label %"+tag[0]);
         u.println(tag[2]+":");
         u.decreaseIndentation();
         return null;
@@ -329,7 +351,7 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
 
         String arg1 = n.f0.accept(this, argu);
         String arg2 = n.f2.accept(this, argu);
-        u.println(u.getReg()+" = sub i32 "+arg1+", "+arg2);
+        u.println(u.getReg()+" = mul i32 "+arg1+", "+arg2);
         return u.getLastReg();
     }
     public String visit(IntegerArrayAllocationExpression n, LLVMRedux argu) throws Exception {
@@ -373,7 +395,7 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         u.println("store i32 "+exprReg+", i32* "+u.getLastReg());
 
 
-        return u.getLastReg();
+        return tempReg;
     }
     public String visit(AllocationExpression n, LLVMRedux argu) throws Exception {
         /*
@@ -403,8 +425,12 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
          * f3 -> "]"
          */
 
-        String final_pointer = u.arrayLookup(n.f0.accept(this, argu),n.f2.accept(this, argu));
-        u.println(u.getReg()+" = load "+u.dereference(u.javaTypeToLLVMType(u.getRegType(final_pointer)))+", "+u.javaTypeToLLVMType(u.getRegType(final_pointer))+" "+final_pointer);//todo get type
+        String final_pointer = u.arrayLookup(n.f0.accept(this, argu),n.f2.accept(this, argu)), loader =u.getReg() ;
+        u.println(loader+" = load "+u.dereference(u.javaTypeToLLVMType(u.getRegType(final_pointer)))+", "+u.javaTypeToLLVMType(u.getRegType(final_pointer))+" "+final_pointer);//todo get type
+        if(u.getRegType(final_pointer).equals("boolean[]")){
+            u.println(u.getReg()+" = trunc i8 "+loader+" to i1");
+        }
+        //if finalpointer type is i8*, then truncate the result in a register and return that register.
         return u.getLastReg();
     }
     public String visit(ArrayLength n, LLVMRedux argu) throws Exception {
@@ -447,7 +473,7 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
         String bitcast2 = u.getReg();
         //if has only one argument copy paste command below without comma and closed parentheses
         if(f.arguments.size()==0){
-            u.println(bitcast2+" = bitcast i8* "+loader2+" to "+u.javaTypeToLLVMType(f.returnType)+"(i8*)");
+            u.println(bitcast2+" = bitcast i8* "+loader2+" to "+u.javaTypeToLLVMType(f.returnType)+"(i8*)*");
         }else{
             u.print(bitcast2+" = bitcast i8* "+loader2+" to "+u.javaTypeToLLVMType(f.returnType)+"(i8*, ");
             //else c&c c&v comm above & loop
@@ -456,21 +482,25 @@ public class LLVMGen extends GJDepthFirst<String,LLVMRedux> {
                 if (!(i==f.arguments.size()-1))u.simpleInlinePrint(", ");
                 i++;
             }
-            u.simpleInlinePrint(")*");
+            u.simplePrint(")*");
         }
 
         argStack.add(new ArrayList<>());
         argStackIndex++;
         n.f4.accept(this, argu);
         String rvalue= u.getReg(f.returnType);
+        if(f.arguments.size()==0){
+            u.println(rvalue+" = call "+u.javaTypeToLLVMType(f.returnType)+" "+bitcast2+"(i8* "+primex_res+")");
+        }else{
 
-        u.print(rvalue+" = call "+u.javaTypeToLLVMType(f.returnType)+" "+bitcast2+"(i8* "+primex_res+", ");
-        localArgList = argStack.get(argStackIndex);
-        for (i=0;i<f.arguments.size();i++){
-            u.simpleInlinePrint(u.javaTypeToLLVMType(f.arguments.get(i).type)+" "+localArgList.get(i));
-            if (!(i==f.arguments.size()-1))u.simpleInlinePrint(", ");
+            u.print(rvalue+" = call "+u.javaTypeToLLVMType(f.returnType)+" "+bitcast2+"(i8* "+primex_res+", ");
+            localArgList = argStack.get(argStackIndex);
+            for (i=0;i<f.arguments.size();i++){
+                u.simpleInlinePrint(u.javaTypeToLLVMType(f.arguments.get(i).type)+" "+localArgList.get(i));
+                if (!(i==f.arguments.size()-1))u.simpleInlinePrint(", ");
+            }
+            u.simplePrint(")");
         }
-        u.simplePrint(")");
 
         argStackIndex--;
         argStack.remove(argStack.size()-1);

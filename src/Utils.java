@@ -1,3 +1,5 @@
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -7,9 +9,17 @@ public class Utils {
     LLVMClass currClass;
     Function currFunction;
     List<Variable> essRegs = new ArrayList<>();
+
+    public Utils(BufferedWriter bw) {
+        this.bw = bw;
+    }
+    public Utils() {
+        this.bw = bw;
+    }
     public Function getCurrFunction() {
         return currFunction;
     }
+    BufferedWriter bw;
 
     public void setCurrFunction(Function currFunction) {
         this.currFunction = currFunction;
@@ -27,9 +37,10 @@ public class Utils {
         return array;
     }
     String []getConditionTags(){
-        String [] array = new String[2];
-        array[0] = "if"+(ifTag++);
-        array[1] = "if"+(ifTag++);
+        String [] array = new String[3];
+        array[0] = "if_then"+(ifTag);
+        array[1] = "if_else"+(ifTag);
+        array[2] = "if_end"+(ifTag++);
         return array;
     }
     String []getWhileTags(){
@@ -52,15 +63,26 @@ public class Utils {
     }
     void regReset(){
         currReg=0;
+        essRegs.clear();
     }
-    void print(String s){
-        System.out.print(Indentation()+s);
+
+    public void simplePrint(String s) throws IOException {
+        bw.write(s+"\n");
+        //System.out.println(s);
+    }
+    public void simpleInlinePrint(String s) throws IOException {
+        bw.write(s);//System.out.print(s);
+    }
+    void print(String s) throws IOException {
+        bw.write(Indentation()+s);
+        //System.out.print(Indentation()+s);
     }
     String printString(String s){
         return Indentation()+s;
     }
-    void println(String s){
-        System.out.println(Indentation()+s);
+    void println(String s) throws IOException {
+        bw.write(Indentation()+s+"\n");
+        //System.out.println();
     }
     private int Indentation=0;
     StringBuilder FPAlloc= new StringBuilder();
@@ -75,8 +97,8 @@ public class Utils {
         rv.append("\t".repeat(Math.max(0, Indentation)));
         return rv.toString();
     }
-    protected void declare(){
-        System.out.print("declare i8* @calloc(i32, i32)\n" +
+    protected void declare() throws IOException {
+        bw.write("declare i8* @calloc(i32, i32)\n" +
                 "declare i32 @printf(i8*, ...)\n" +
                 "declare void @exit(i32)\n" +
                 "\n" +
@@ -94,23 +116,26 @@ public class Utils {
                 "    call void @exit(i32 1)\n" +
                 "    ret void\n" +
                 "}\n\n");
-        System.out.print("define void @throw_nsz() {\n" +
+        //System.out.print();
+        bw.write("define void @throw_nsz() {\n" +
                 "    %_str = bitcast [15 x i8]* @_cNSZ to i8*\n" +
                 "    call i32 (i8*, ...) @printf(i8* %_str)\n" +
                 "    call void @exit(i32 1)\n" +
                 "    ret void\n" +
                 "}\n\n");
+        //System.out.print();
     }
     String NumberedIndentation(int x){
         return "\t".repeat(Math.max(0, x));
     }
+
     public LLVMClass getCurrClass() {
         return currClass;
     }
-
     public void setCurrClass(LLVMClass currClass) {
         this.currClass = currClass;
     }
+
     protected int javaTypeToOffset(String returnType) {
         switch (returnType){
             case "int":
@@ -125,25 +150,18 @@ public class Utils {
 
     }
 
-
-    public void printFP(String type, String s, String ID) {
+    public void printFP(String type, String s, String ID) throws IOException {
         FPAlloc.append(NumberedIndentation(1)).append("%").append(ID).append(" = alloca ").append(type).append("\n");
         FPAlloc.append(NumberedIndentation(1)).append("store ").append(type).append(" ").append(s).append(ID).append(", ").append(type).append("*").append(" %").append(ID).append("\n");
         print(type+s+ID);
     }
+
     String getFPallocs(){
         String r=FPAlloc.toString();
         FPAlloc.setLength(0);
         return r;
     }
-
-    public void simplePrint(String s) {
-        System.out.println(s);
-    }
-    public void simpleInlinePrint(String s) {
-        System.out.print(s);
-    }
-    public String decodeIdentifier(String Identifier) {
+    public String decodeIdentifier(String Identifier) throws IOException {
         for (Variable v : currFunction.declarations){
             if(v.name.equals(Identifier)){
                 return "%"+v.name;
@@ -164,7 +182,7 @@ public class Utils {
         return "decode identifier not found "+Identifier;
     }
 
-    private String getClassVariable(Variable v) {
+    private String getClassVariable(Variable v) throws IOException {
         String reg = getReg();
         print((reg + " = getelementptr i8, i8* %this, i32 " + (v.offset+8) + "\n") + printString(getReg() + " = bitcast i8* " + reg + " to " + javaTypeToLLVMType(v.type)+ "*\n\n"));
         return getLastReg();
@@ -221,7 +239,7 @@ public class Utils {
 
 
 
-    public String arrayDifferenciation(String reg1, String type) {
+    public String arrayDifferenciation(String reg1, String type) throws IOException {
         if(type.equals("int[]")){
             return reg1;
         }else if(type.equals("boolean[]")){
@@ -233,7 +251,7 @@ public class Utils {
         }
     }
 
-    public void oobCheckSegment(String condFinal, String[] array) {
+    public void oobCheckSegment(String condFinal, String[] array) throws IOException {
         println("br i1 "+condFinal+", label %"+array[0]+", label %"+array[1]);
 
         println(array[1]+":\n" +Indentation()+
@@ -252,13 +270,13 @@ public class Utils {
         }
 
     }
-    String getLengthSegment(String reg1, String type){
+    String getLengthSegment(String reg1, String type) throws IOException {
         String sizeLoader = arrayDifferenciation(reg1, type);
         String size = getReg();
         println(size+" = load i32, i32* "+sizeLoader);
         return size;
     }
-    String arrayAccess( String reg1, String type, String betweenBrackets){
+    String arrayAccess( String reg1, String type, String betweenBrackets) throws IOException {
         String size = getLengthSegment(reg1, type);
         String cond1 =getReg(), cond2 = getReg(), condFinal = getReg();
         println(cond1+" = icmp sge i32 "+ betweenBrackets +", 0");
@@ -271,7 +289,7 @@ public class Utils {
         println(pointer+" = getelementptr "+dereference(javaTypeToLLVMType(type))+", "+javaTypeToLLVMType(type)+" "+reg1+", i32 "+finalIndex);
         return pointer;
     }
-    String arrayAssignment(String arrayID, String betweenBrackets){
+    String arrayAssignment(String arrayID, String betweenBrackets) throws IOException {
         String storeArg1 = decodeIdentifier(arrayID);
         String type = getIdentifierType(arrayID);
         String reg1 = getReg();
@@ -279,7 +297,7 @@ public class Utils {
         return arrayAccess(reg1,type,betweenBrackets);
 
     }
-    String arrayLookup(String primexResult, String betweenBrackets){
+    String arrayLookup(String primexResult, String betweenBrackets) throws IOException {
         String type = getRegType(primexResult);
         return arrayAccess(primexResult,type,betweenBrackets);
     }
@@ -287,7 +305,7 @@ public class Utils {
         return regType.substring(0,regType.length()-1);
     }
 
-    public String decodePrimexIdentifier(String Identifier) {
+    public String decodePrimexIdentifier(String Identifier) throws IOException {
         String reg,reg1;
         for (Variable v : currFunction.arguments){
             if(v.name.equals(Identifier)){
@@ -318,7 +336,7 @@ public class Utils {
         }
         return " decode primex identifier not found "+Identifier;
     }
-    public String getArg(String result) {
+    public String getArg(String result) throws IOException {
         String temp;
         if(isReg(result)){
             return result;
@@ -332,7 +350,7 @@ public class Utils {
         }
         return "getarg not found "+result;
     }
-    public void allocationSegment(String allocSize, String exprReg, String[] array,int typeFactor) {
+    public void allocationSegment(String allocSize, String exprReg, String[] array,int typeFactor) throws IOException {
         println(allocSize+" = add i32 "+typeFactor+", "+exprReg);
         println(getReg()+" = icmp sge i32 "+allocSize+", 1");
         println("br i1 "+getLastReg()+", label %"+array[0]+", label %"+array[1]);
